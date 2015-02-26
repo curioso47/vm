@@ -1,0 +1,243 @@
+#!/usr/bin/env bash
+
+# Install script for BPM, based off BCE.
+
+# To provision a new BPM VM, get the latest BCE. Boot it, then open a terminal
+# and do: 
+#
+#    cd /usr/local/bin
+#    sudo wget https://raw.githubusercontent.com/rsprouse/ucblingmisc/master/bpm-bce/curio-update-2015-spring
+#    sudo chmod +x curio-update-2015-spring
+#    sudo curio-update-2015-spring curio
+#
+# This creates a VM that can be exported and shared without restriction. Additional
+# license-restricted packages can be installed for internal sharing with:
+#
+#    sudo curio-update curio
+#
+# Note that the curio target symlinks curio-update-VERSION to curio-update, and the
+# shorter form can be used thereafter.
+#
+# Individual packages can be installed or updated with:
+#
+#    sudo curio-update <package>
+#
+# To list available packages:
+#
+#    curio-update --help
+
+VERSION=BCE-2015-spring-CURIO-1
+VERSION_SUFFIX=`echo $VERSION | cut -f 2,3 -d-`   # e.g. 2015-spring
+SCRIPTDIR=/usr/local/bin
+BARE_SCRIPTNAME=curio-update
+VERSIONED_SCRIPTNAME="$BARE_SCRIPTNAME-$VERSION_SUFFIX"
+ABS_BARE_SCRIPTNAME="$SCRIPTDIR/$BARE_SCRIPTNAME"
+ABS_VERSIONED_SCRIPTNAME="$SCRIPTDIR/$VERSIONED_SCRIPTNAME"
+
+APT_GET="apt-get -q -y"
+ORIGDIR=`pwd`
+
+# Make heredoc variable assignment pretty.
+define(){ read -r -d '' ${1} || true; }
+
+# Install/remove .deb packages with apt-get.
+# First argument is install|remove
+# Second argument is a newline-delimited list of packages (# comment lines allowed).
+# Third argument is message to echo to console.
+apt_get_packages(){
+    echo "${3}"
+    # The grep bit allows us to have comments in the packages file
+    # The quotation marks around ${1} preserves newlines.
+    $APT_GET ${1} $(grep '^[^#]' <(echo "${2}")) && \
+    $APT_GET clean && \ # help avoid running out of disk space
+    echo DONE: ${3} || echo FAIL: ${3}
+}
+
+# Package installs will fail if we are not up to date.
+apt_get_update(){
+    $APT_GET update
+}
+
+# Install the version.txt file on the desktop.
+install_version_txt() {
+    echo "Installing version.txt to the desktop."
+    echo "Installed version will be $VERSION. Press 'y' to confirm."
+    read -n 1 confirm
+    if [ "$confirm" != 'y' ]; then
+        echo "Edit curio-update to update VERSION. Exiting."
+        exit 1
+    fi
+    cat >> /home/oski/Desktop/version.txt << EOF
+$VERSION
+EOF
+    echo "Installed version.txt."
+}
+
+# Create a symlink from curio-update-VERSION to curio-update.
+symlink_curio-update() {
+    echo "Creating symlink to $ABS_BARE_SCRIPTNAME from $ABS_VERSIONED_SCRIPTNAME."
+    ln -s $ABS_VERSIONED_SCRIPTNAME $ABS_BARE_SCRIPTNAME && \
+    echo "DONE: Created symlink." || { echo "FAIL: Could not create symlink. Is $VERSIONED_SCRIPTNAME in $SCRIPTDIR? Or are you trying to run "; exit 1; }
+}
+
+# Self-update the curio-update script.
+# Adapted from http://stackoverflow.com/questions/8595751/is-this-a-valid-self-update-approach-for-a-bash-script
+update_curio-update() {
+    echo "Updating bpm_update"
+
+    UPDATE_BASE=https://raw.githubusercontent.com/rsprouse/ucblingmisc/master/bpm-bce
+
+    # Download new version
+    if ! wget --quiet --output-document="$ABS_VERSIONED_SCRIPTNAME".tmp $UPDATE_BASE/$VERSIONED_SCRIPTNAME ; then
+        echo "Failed: Error while trying to wget new version!"
+        echo "File requested: $UPDATE_BASE/$VERSIONED_SCRIPTNAME"
+        exit 1
+    fi
+
+    # Copy over modes from old version
+    OCTAL_MODE=$(stat -c '%a' $ABS_VERSIONED_SCRIPTNAME)
+    if ! chmod $OCTAL_MODE "$ABS_VERSIONED_SCRIPTNAME.tmp" ; then
+        echo "Failed: Error while trying to set mode on $ABS_VERSIONED_SCRIPTNAME.tmp."
+        exit 1
+    fi
+
+    # Create and spawn update script
+    cat > overwrite_curio-update.sh << EOF
+#!/bin/bash
+
+# Overwrite old file with new
+if mv "$ABS_VERSIONED_SCRIPTNAME.tmp" "$ABS_VERSIONED_SCRIPTNAME"; then
+  echo 'Done. Update of "$ABS_VERSIONED_SCRIPTNAME" complete.'
+else
+  echo 'Failed to update "$ABS_VERSIONED_SCRIPTNAME"!'
+fi
+# Remove overwrite_curio-update.sh and return to specified directory.
+rm \$0
+cd "\$1"
+EOF
+
+    echo -n "Inserting update process..."
+    exec /bin/bash overwrite_curio-update.sh "$ORIGDIR"
+}
+
+# Clone and set up python package from github.
+# First argument is base github url.
+# Second argument is specific repo (package) on github.
+python_clone_and_setup(){
+    cd /usr/local/src
+    git clone ${1}/${2}
+    cd ${2}
+    python setup.py install
+    cd ..
+    rm -rf ${2}
+    cd $ORIGDIR
+}
+
+install_bce_packages(){
+    # These are packages that install from repositories already enabled in BCE.
+define STDPKGS <<'EOF'
+python-biopython
+EOF
+    apt_get_packages install "$STDPKGS" "BPM-BCE: Installing Curio packages from standard repositories..."
+}
+
+# R packages for Curio.
+install_r_packages(){
+define r_cmd <<'EOF'
+install.packages(
+    c(
+      "gdata"
+    ),
+    repos = "http://cran.cnr.Berkeley.edu")
+EOF
+echo $r_cmd | sudo /usr/bin/Rscript --no-restore --no-save -
+}
+
+define usage <<'EOF'
+
+  curio-update
+    Provisioning script for installing and updating Berkeley Phonetics Machine
+    (BPM) packages.
+
+  Usage:
+    curio-update <target>     # install or update package <target>
+    curio-update --help       # full usage info and list of targets
+
+EOF
+
+define targets <<'EOF'
+
+Targets not installed in the Curio release:
+
+
+Targets that are installed in the BPM public release. Use these to reinstall
+or update:
+
+  bce-packages
+    Packages that are available in the BCE package repository but not already
+    installed in BCE (imagemagick, praat, sox, wavesurfer).
+
+  r-packages
+    A useful set of R packages for Curio.
+  
+Special purpose targets:
+
+  curio-update
+    Use this target to self-update curio-update.
+
+  curio
+    Use this target to provision BPM additions to a BCE release.
+
+  apt-get
+    Use this target to update the apt database before installing a target
+    that includes a .deb file.
+
+EOF
+
+case "$1" in
+
+# Base package installation for public release. 
+curio)
+    symlink_curio-update
+    install_version_txt
+    apt_get_update
+    install_bce_packages
+    install_r_packages
+    apt-get -q -y autoremove
+    ;;
+
+# Self-update curio-update.
+curio-update)
+    update_curio-update
+    ;;
+
+bce-packages)
+    install_bce_packages
+    ;;
+
+r-packages)
+    install_r_packages
+    ;;
+
+
+# Miscellaneous commands that don't do any installs.
+apt-get)
+    apt_get_update
+    ;;
+
+--help)
+    echo " "
+    echo "$usage"
+    echo " "
+    echo "$targets"
+    echo " "
+    ;;
+
+*)
+    echo " "
+    echo "$usage"
+    echo " "
+    ;;
+
+esac
+
