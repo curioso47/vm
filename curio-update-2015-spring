@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-# Install script for BPM, based off BCE.
+# Install script for Curio, based off BCE.
 
-# To provision a new BPM VM, get the latest BCE. Boot it, then open a terminal
+# To provision a new Curio VM, get the latest BCE. Boot it, then open a terminal
 # and do: 
 #
 #    cd /usr/local/bin
-#    sudo wget https://raw.githubusercontent.com/rsprouse/ucblingmisc/master/bpm-bce/curio-update-2015-spring
+#    sudo wget https://raw.githubusercontent.com/rsprouse/curio/master/curio-update-2015-spring
 #    sudo chmod +x curio-update-2015-spring
 #    sudo curio-update-2015-spring curio
 #
@@ -83,9 +83,9 @@ symlink_curio-update() {
 # Self-update the curio-update script.
 # Adapted from http://stackoverflow.com/questions/8595751/is-this-a-valid-self-update-approach-for-a-bash-script
 update_curio-update() {
-    echo "Updating bpm_update"
+    echo "Updating curio_update"
 
-    UPDATE_BASE=https://raw.githubusercontent.com/rsprouse/ucblingmisc/master/bpm-bce
+    UPDATE_BASE=https://raw.githubusercontent.com/rsprouse/curio/master
 
     # Download new version
     if ! wget --quiet --output-document="$ABS_VERSIONED_SCRIPTNAME".tmp $UPDATE_BASE/$VERSIONED_SCRIPTNAME ; then
@@ -138,7 +138,7 @@ install_bce_packages(){
 define STDPKGS <<'EOF'
 python-biopython
 EOF
-    apt_get_packages install "$STDPKGS" "BPM-BCE: Installing Curio packages from standard repositories..."
+    apt_get_packages install "$STDPKGS" "Curio-BCE: Installing Curio packages from standard repositories..."
 }
 
 # R packages for Curio.
@@ -156,8 +156,7 @@ echo $r_cmd | sudo /usr/bin/Rscript --no-restore --no-save -
 define usage <<'EOF'
 
   curio-update
-    Provisioning script for installing and updating Berkeley Phonetics Machine
-    (BPM) packages.
+    Provisioning script for installing and updating Curio packages.
 
   Usage:
     curio-update <target>     # install or update package <target>
@@ -170,7 +169,7 @@ define targets <<'EOF'
 Targets not installed in the Curio release:
 
 
-Targets that are installed in the BPM public release. Use these to reinstall
+Targets that are installed in the Curio public release. Use these to reinstall
 or update:
 
   bce-packages
@@ -186,7 +185,7 @@ Special purpose targets:
     Use this target to self-update curio-update.
 
   curio
-    Use this target to provision BPM additions to a BCE release.
+    Use this target to provision Curio additions to a BCE release.
 
   apt-get
     Use this target to update the apt database before installing a target
