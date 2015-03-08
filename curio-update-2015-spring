@@ -153,6 +153,12 @@ EOF
 echo $r_cmd | sudo /usr/bin/Rscript --no-restore --no-save -
 }
 
+# Python packages for Curio.
+install_py_packages(){
+  pip install xlrd
+  pip install xlwt
+}
+
 define usage <<'EOF'
 
   curio-update
@@ -179,6 +185,9 @@ or update:
   r-packages
     A useful set of R packages for Curio.
   
+  py-packages
+    A useful set of Python packages for Curio.
+
 Special purpose targets:
 
   curio-update
@@ -216,6 +225,10 @@ bce-packages)
 
 r-packages)
     install_r_packages
+    ;;
+
+py-packages)
+    install_py_packages
     ;;
 
 
