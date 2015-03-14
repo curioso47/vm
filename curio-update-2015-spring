@@ -6,7 +6,7 @@
 # and do: 
 #
 #    cd /usr/local/bin
-#    sudo wget https://raw.githubusercontent.com/rsprouse/curio/master/curio-update-2015-spring
+#    sudo wget https://raw.githubusercontent.com/curioso47/vm/master/curio-update-2015-spring
 #    sudo chmod +x curio-update-2015-spring
 #    sudo curio-update-2015-spring curio
 #
@@ -85,7 +85,7 @@ symlink_curio-update() {
 update_curio-update() {
     echo "Updating curio_update"
 
-    UPDATE_BASE=https://raw.githubusercontent.com/rsprouse/curio/master
+    UPDATE_BASE=https://raw.githubusercontent.com/curioso47/vm/master
 
     # Download new version
     if ! wget --quiet --output-document="$ABS_VERSIONED_SCRIPTNAME".tmp $UPDATE_BASE/$VERSIONED_SCRIPTNAME ; then
