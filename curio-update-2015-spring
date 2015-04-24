@@ -153,6 +153,14 @@ EOF
 echo $r_cmd | sudo /usr/bin/Rscript --no-restore --no-save -
 }
 
+# ELAN from MPI.
+install_elan(){
+  cd /usr/local/src
+  wget http://www.mpi.nl/tools/elan/ELAN_4-8-1_linux.bin
+  ./ELAN_4-8-1_linux.bin
+  rm ELAN_4-8-1_linux.bin
+}
+
 # Python packages for Curio.
 install_py_packages(){
   pip install xlrd
@@ -188,6 +196,9 @@ or update:
   py-packages
     A useful set of Python packages for Curio.
 
+  elan
+    elan from mpi.
+
 Special purpose targets:
 
   curio-update
@@ -217,6 +228,10 @@ curio)
 # Self-update curio-update.
 curio-update)
     update_curio-update
+    ;;
+
+elan)
+    install_elan
     ;;
 
 bce-packages)
